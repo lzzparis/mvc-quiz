@@ -71,17 +71,21 @@ var View = function() {
 }
 
 View.prototype.setQuestion = function(questionIndex){
+    //don;t use this QUESTIONS directly, receive from model
     var question = QUESTIONS[questionIndex];
     this.currentElement.text(questionIndex);
     this.questionElement.text(question.text);
 
-    //TODO fix this localA  E
-    var localAE = this.answersElement;
-    localAE.empty();
+    //TODO fix this localAE
+    //var localAE = this.answersElement;
+    //localAE.empty();
+    var that = this;
+    that.answersElement.empty();
     question.answers.forEach(function(answer) {
-        localAE.append("<li><button type=\"button\">" + answer + "</button></li>");
+        //localAE.append("<li><button type=\"button\">" + answer + "</button></li>");
+        that.answersElement.append("<li><button type=\"button\">" + answer + "</button></li>");
     });
-    this.answersElement = localAE;
+    //this.answersElement = localAE;
 }
 
 
