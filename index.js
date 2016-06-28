@@ -44,6 +44,8 @@ var QUESTIONS = [
 var Model = function() {
   this.questions = QUESTIONS;
   this.resetState();
+  this.initDisplayLink = null;
+  this.updateDisplayLink = null;
 }
 
 Model.prototype.scoreQuestion = function(choice) {
@@ -53,41 +55,78 @@ Model.prototype.scoreQuestion = function(choice) {
     this.score += 1;
   }
   this.index += 1;
+
+  if(this.updateDisplayLink){
+    this.updateDisplayLink(this.questions[this.index], this.index, this.score);
+  }
 }
 
 Model.prototype.resetState = function() {
   this.index = 0;
   this.score = 0;
+  if(this.initDisplayLink){
+    this.initDisplayLink(this.questions[0], this.questions.length);
+  }
 }
 
 var View = function() {
     this.questionsPageElement = $(".questions-page");
     this.resultsPageElement = $(".results-page");
     this.currentElement = $(".question-current");
-    this.totalElement = $(".question-total");
+    this.totalElement = $(".questions-total");
     this.questionElement = $(".question");
     this.answersElement = $(".answers");
     this.scoreElement = $(".score");
+    this.restartElement = $(".restart-button");
+
+    this.scoreLink = null;
+    this.restartLink = null;
+
+    this.setAnswer.bind(this);
+    this.answersElement.on("click","button",this.getAnswer.bind(this));
+    this.restartElement.on("click", this.restartQuiz.bind(this));
 }
 
-View.prototype.setQuestion = function(questionIndex){
-    //don;t use this QUESTIONS directly, receive from model
-    var question = QUESTIONS[questionIndex];
+View.prototype.initDisplay = function(question, totalQuestions){
+    this.totalElement.text(totalQuestions);
+    this.setQuestion(question,0,0);
+    this.showQuestions();
+}
+
+View.prototype.getAnswer = function(event) {
+    //this is the button i pressed
+    var chosenAnswer = parseInt(event.target.value);
+    if(this.scoreLink) {
+        this.scoreLink(chosenAnswer);
+    }
+}
+
+View.prototype.updateDisplay = function(question, questionIndex, currentScore){
+    this.currentElement.text(questionIndex); 
+    this.scoreElement.text(currentScore);
+    if(question){
+        this.setQuestion(question,questionIndex);
+    }
+    else{
+        this.showResults();
+    }
+}
+
+View.prototype.setQuestion = function(question, questionIndex){
     this.currentElement.text(questionIndex);
     this.questionElement.text(question.text);
 
-    //TODO fix this localAE
-    //var localAE = this.answersElement;
-    //localAE.empty();
-    var that = this;
-    that.answersElement.empty();
-    question.answers.forEach(function(answer) {
-        //localAE.append("<li><button type=\"button\">" + answer + "</button></li>");
-        that.answersElement.append("<li><button type=\"button\">" + answer + "</button></li>");
-    });
-    //this.answersElement = localAE;
+    this.answersElement.empty();
+    for(var i = 0; i < question.answers.length; i+=1){
+        this.setAnswer(question.answers[i],i);
+    }
 }
 
+View.prototype.setAnswer = function(answerText,answerIndex) {
+    this.answersElement.append("<li>" +
+            "<button type=\"button\" value=\"" + answerIndex + "\">" + 
+            answerText + "</button></li>");
+}
 
 View.prototype.showResults = function() {
     this.questionsPageElement.hide();
@@ -99,21 +138,23 @@ View.prototype.showQuestions = function() {
     this.questionsPageElement.show();
 };
 
+View.prototype.restartQuiz = function() {
+    if(this.restartLink){
+        this.restartLink();
+    }
+}
+
+var Controller = function(model, view) {
+    model.initDisplayLink = view.initDisplay.bind(view);
+    view.restartLink = model.resetState.bind(model);
+    model.updateDisplayLink = view.updateDisplay.bind(view);
+    view.scoreLink = model.scoreQuestion.bind(model);
+}
 
 $(document).ready(function() {
   var model = new Model();
   var view  = new View();
+  var controller = new Controller(model, view);
 
-
-
-  view.setQuestion(0);
-  // model.scoreQuestion(0);
-  // view.setQuestion(0);
-  // model.scoreQuestion(1);
-  // view.setQuestion(0);
-  // model.scoreQuestion(1);
-  // view.setQuestion(0);
-  // model.scoreQuestion(3);
-
-  model.resetState();
+  view.restartQuiz();
 });
